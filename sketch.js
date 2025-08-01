@@ -3,7 +3,7 @@ let centerX;
 let centerY;
 const radius = 120;
 const size = radius/2;
-const rootNote = 233.33;
+let rootNote = 233.33;
 let handPose;
 let video;
 let hands = [];
@@ -18,28 +18,41 @@ let cHex = makeHex(aHex.l);
 let hexes = [];
 let isMajor = false;
 let isMinor = false;
-let isDrone = false
-
+let freq1 = 0;
+let freq2 = 0;
+let freq3 = 0;
+let font;
+let deadmobzerfont;
 /*
 To start with I am testing the A scale (because its easy)
 */
 
 function preload(){
   handPose = ml5.handPose();
+  font = loadFont('resources/soopafre.ttf');
+  deadmobzerfont = loadFont('resources/mephisto.ttf');
 }
 
 function setup() {
+  textFont(font);
+  if(getAudioContext.state != 'running'){getAudioContext().resume();}
   createCanvas(windowWidth, windowHeight);
-  let x = makeHex(440);
-  for(const key in x){
-    console.log("{Key: " + key.toString() + ", Value: " + x[key].toString() + "}")
+
+  newRoot = parseFloat(prompt("Enter a note to generate from:", rootNote));
+  if(newRoot){
+    rootNote = newRoot;
+  }
+  if(isNaN(rootNote)){
+    if(confirm
+      ("You need to enter a number. Press okay to refresh page and try again")){
+      location.reload();
+    }
   }
 
   video = createCapture(VIDEO);
   video.size(width, height);
   video.hide();
   handPose.detectStart(video, gotHands);
-  console.log(x.note)
   centerX = width/2;
   centerY = height/2;
 
@@ -55,7 +68,7 @@ function setup() {
   drone.freq(rootNote/4);
   drone.amp(0.4);
 
-  createHexes(rootNote, centerX, centerY, radius, 2, hexes);
+  createHexes(rootNote, centerX, centerY, radius, 3, hexes);
   for(hex of hexes){
     for(const key in hex){
       let note = hex[key];
@@ -91,7 +104,11 @@ function draw() {
   scale(-1,1);
   image(video, 0, 0, width, height);
   pop();
-  background(10,10,10, 200);
+  background(10,10,10, 100);
+  if(points.length > 3){
+    background(points[1].x, rootNote, points[1].y, 80)
+  }
+  
   drawHands();
   //drawHex(aHex, centerX, centerY);
   //drawHex(bHex, centerX + radius, centerY);
@@ -99,6 +116,16 @@ function draw() {
   summonHexes();
   
   playNote();
+  textFont(font);
+  textAlign(RIGHT, BOTTOM);
+  fill(255,255,255, 50);
+  noStroke();
+  textSize(size/2);
+  text("tonnetz", 0.99*width, (0.99* height) - 1.1*(size/2));
+  textFont(deadmobzerfont);
+  text("by deadmobzer", 0.99*width, 0.99*height);
+
+
 }
 
 function summonHexes(){
@@ -106,13 +133,23 @@ function summonHexes(){
 
   for(let note of notes){
     if(note.isDrawn){
-    stroke(0,100,0);
-    fill(0,255,0);
+    strokeWeight(3);
+    stroke(255, 10);
+    let norm = abs((note.x - width / 2) / (width / 2))
+    
+    let intensity = 64 + (1 - norm) * (255 - 64)
+    let y_intest = 255 - (255 * abs((note.y - height/2) / (height/2)))
+    fill(255-intensity,y_intest,intensity, 100);
+    if(points.length > 3){
+    fill(points[1].x - intensity, rootNote - y_intest, points[1].y - intensity, 100)
+  }
     circle(note.x, note.y, size);
-    textSize(size/2);
+    noStroke();
+    textFont(font);
+    textSize(size/3);
     textAlign(CENTER, CENTER);
-    fill(200,255,200);
-    text(note.note.toFixed(2), note.x, note.y);
+    fill(255,255,255);
+    text(approximateNote(note.note), note.x, note.y);
     }
     else{
 
@@ -158,7 +195,7 @@ function drawHex(root, x, y){
 
   
   // Text styling
-  textSize(size/2);
+  textSize(size/4);
   textAlign(CENTER, CENTER);
   fill(200,255,200);
 

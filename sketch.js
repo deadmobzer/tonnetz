@@ -3,11 +3,12 @@ let centerX;
 let centerY;
 const radius = 120;
 const size = radius/2;
-
+const rootNote = 233.33;
 let handPose;
 let video;
 let hands = [];
 let points = [];
+let orch = [];
 let notes = [];
 let osc;
 let fingerOscs = [];
@@ -15,6 +16,9 @@ let aHex = makeHex(220);
 let bHex = makeHex(aHex.r);
 let cHex = makeHex(aHex.l);
 let hexes = [];
+let isMajor = false;
+let isMinor = false;
+let isDrone = false
 
 /*
 To start with I am testing the A scale (because its easy)
@@ -46,7 +50,12 @@ function setup() {
   fingerOscs.push(osc);
   }
 
-  createHexes(440, centerX, centerY, radius, 2, hexes);
+  let drone = new p5.Oscillator('sine');
+  drone.start();
+  drone.freq(rootNote/4);
+  drone.amp(0.4);
+
+  createHexes(rootNote, centerX, centerY, radius, 2, hexes);
   for(hex of hexes){
     for(const key in hex){
       let note = hex[key];
@@ -74,6 +83,7 @@ function setup() {
 
 function gotHands(returns){
   hands = returns;
+  console.log(returns);
 }
 function draw() {
   push();
@@ -176,7 +186,51 @@ function drawHex(root, x, y){
 }
 
 function playNote() {
-  for (let i = 0; i < points.length; i++) {
+  
+
+   if(isMajor){
+    let pointer = points[0];
+    for (let note of notes) {
+      let d = dist((width-pointer.x), pointer.y, note.x, note.y);
+      if (d < size/1.5) { // 20px detection range
+        fingerOscs[0].freq(note.note);
+        fingerOscs[0].amp(0.4, 0.05); // Smooth fade in
+        fingerOscs[1].freq(note.note * 3/2);
+        fingerOscs[1].amp(0.4, 0.05); // Smooth fade in
+        fingerOscs[2].freq(note.note * 5/4);
+        fingerOscs[2].amp(0.4, 0.05); // Smooth fade in
+        for(let i = 3; i< fingerOscs.length; i++){
+        fingerOscs[i].amp(0, 0.1)
+        }
+        break;
+      }
+      
+  }
+
+}
+
+  else if(isMinor){
+        let pointer = points[0];
+    for (let note of notes) {
+      let d = dist((width-pointer.x), pointer.y, note.x, note.y);
+      if (d < size/1.5) { // 20px detection range
+        fingerOscs[0].freq(note.note);
+        fingerOscs[0].amp(0.4, 0.05); // Smooth fade in
+        fingerOscs[1].freq(note.note * 3/2);
+        fingerOscs[1].amp(0.4, 0.5); // Smooth fade in
+        fingerOscs[2].freq(note.note * 5/6);
+        fingerOscs[2].amp(0.4, 0.5); // Smooth fade in
+        played = true;
+        for(let i = 3; i< fingerOscs.length; i++){
+        fingerOscs[i].amp(0, 0.1)
+        }
+        break;
+      }
+  }
+  }
+
+  else{
+      for (let i = 0; i < points.length; i++) {
     let pointer = points[i];
     let played = false;
 
@@ -194,31 +248,82 @@ function playNote() {
       fingerOscs[i].amp(0, 0.1); // Fade out if not touching anything
     }
   }
+  }
+  if(points.length == 0){
+    return [];
+  }
+
+
 }
-
-
-
 function drawHands(){
-  if(hands.length > 0){
+
+  console.log("isMajor: " + isMajor);
+  console.log("isMinor: " + isMinor);
+  if(hands.length == 1 ){
     let pointer = hands[0].index_finger_tip;
     let middle = hands[0].middle_finger_tip;
     let thumb = hands[0].thumb_tip;
     let ring = hands[0].ring_finger_tip;
     let pinky = hands[0].pinky_finger_tip;
     points = [pointer, middle, thumb, ring,pinky]
+    
+  }
+   if(hands.length == 2){
+  for(let hand of hands){
+    if(hand.handedness == "Left"){
+    let pointer = hand.index_finger_tip;
+    let middle = hand.middle_finger_tip;
+    let thumb = hand.thumb_tip;
+    let ring = hand.ring_finger_tip;
+    let pinky = hand.pinky_finger_tip;
+    points = [pointer, middle, thumb, ring,pinky]
+    }
 
-    for(let tip of points){
+    if(hand.handedness == "Right"){
+    let pointer2 = hands[1].index_finger_tip;
+    let middle2 = hands[1].middle_finger_tip;
+    let pointer2b = hands[1].index_finger_mcp;
+    let middle2b = hands[1].middle_finger_mcp;
+    orch = [pointer2, middle2, pointer2b, middle2b];
+    console.log(pointer2.y);
+    console.log(pointer2b.y);
+
+    if(pointer2.y <= pointer2b.y - 20){
+      if(middle2.y <= middle2b.y - 20){
+        isMinor = true;
+        isMajor = false;
+      }
+      else{
+        isMajor = true;
+        isMinor = false;
+      }
+    }
+    else{
+      isMajor = false;
+      isMinor = false;
+    }
+    }
+  } 
+  }
+
+
+  for(let tip of points){
       fill(255,0,0, 100);
       circle(width-tip.x, tip.y, size/1.5);
     }
 
-    if(hands.length == 0){
-      for(i = 0; i < fingerOscs.length; i++){
-        fingerOscs[i].amp(0,0.1);
-      }
+  if(hands.length>1){
+for(let point of orch){
+      fill(0,0,255, 100);
+      circle(width-point.x, point.y, size/1.5);
     }
   }
 
-
-  
+      if(hands.length == 0){
+      for(i = 0; i < fingerOscs.length; i++){
+        fingerOscs[i].amp(0,0.1);
+      }
+      return;
+    }
+    
 }

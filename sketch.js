@@ -46,7 +46,29 @@ function setup() {
   fingerOscs.push(osc);
   }
 
-  createHexes(440, centerX, centerY, radius, 1, hexes);
+  createHexes(440, centerX, centerY, radius, 2, hexes);
+  for(hex of hexes){
+    for(const key in hex){
+      let note = hex[key];
+      notes.push(new Note(note.note, note.x, note.y));
+    }
+  }
+
+  console.log("Hey were done adding notes");
+  console.log(notes);
+  let coords = [];
+  for(let note of notes){
+    console.log("Note: " + note.note + ", X: " + note.x + ", Y: " + note.y);
+    if(coords.some(coord => coord.x === note.x && coord.y === note.y)){
+      note.isDrawn = false; 
+      console.log("Note already drawn at: " + note.x + ", " + note.y);
+    }
+    else{
+      coords.push({x: note.x, y: note.y});
+      note.isDrawn = true; 
+    }
+
+  }
   
 }
 
@@ -54,25 +76,26 @@ function gotHands(returns){
   hands = returns;
 }
 function draw() {
-  notes = [];
-  image(video, 0, 0);
+  push();
+  translate(width,0);
+  scale(-1,1);
+  image(video, 0, 0, width, height);
+  pop();
   background(10,10,10, 200);
   drawHands();
   //drawHex(aHex, centerX, centerY);
   //drawHex(bHex, centerX + radius, centerY);
   //drawHex(cHex, centerX - radius, centerY);
-  summonHexes(hexes);
+  summonHexes();
   
   playNote();
 }
 
-function summonHexes(set){
-  for(let hex of set){
-    for(const key in hex){
-      let note = hex[key];
-      notes.push(new Note(note.note, note.x, note.y));
-  }
+function summonHexes(){
+
+
   for(let note of notes){
+    if(note.isDrawn){
     stroke(0,100,0);
     fill(0,255,0);
     circle(note.x, note.y, size);
@@ -80,8 +103,13 @@ function summonHexes(set){
     textAlign(CENTER, CENTER);
     fill(200,255,200);
     text(note.note.toFixed(2), note.x, note.y);
+    }
+    else{
+
+    }
+    
   }
-}}
+}
 
 function drawHex(root, x, y){
   stroke(0,100,0);
@@ -153,7 +181,7 @@ function playNote() {
     let played = false;
 
     for (let note of notes) {
-      let d = dist(pointer.x, pointer.y, note.x, note.y);
+      let d = dist((width-pointer.x), pointer.y, note.x, note.y);
       if (d < size/1.5) { // 20px detection range
         fingerOscs[i].freq(note.note);
         fingerOscs[i].amp(0.4, 0.05); // Smooth fade in
@@ -181,7 +209,7 @@ function drawHands(){
 
     for(let tip of points){
       fill(255,0,0, 100);
-      circle(tip.x, tip.y, size/1.5);
+      circle(width-tip.x, tip.y, size/1.5);
     }
 
     if(hands.length == 0){

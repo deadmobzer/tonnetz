@@ -28,14 +28,38 @@ class NodeHex{
     }
 }
 class Note{
-    constructor(note, x, y){
+    constructor(note, x, y, notDrawn){
         this.note = note;
         this.x = x;
         this.y = y;
+        this.notDrawn = notDrawn || false; // Default to false if not provided
     }
 }
 
-function createHex(freq, rootx, rooty, dist){
+function trimmedNotes(notes) {
+    let seenFreqs = new Set();
+    if (notes.length === 0) {
+        return [];
+    }
+
+    for(i = notes.length; i >= 0; i++) {
+        console.log(notes[i]);
+        const current = notes[i];
+        const noteFreq = current.note.toFixed(4);
+        if(seenFreqs.has(noteFreq)){
+            current.notDrawn = false; // Mark as not drawn
+        }
+        else{
+            seenFreqs.add(noteFreq);
+            current.notDrawn = true; // Mark as drawn
+        }
+    }
+
+    return Array.from(seenFreqs);
+}
+
+
+function createHex(freq, rootx, rooty, dist, hexes){
     let x = rootx;
     let y = rooty;
     let radius = dist;
@@ -59,6 +83,7 @@ function createHex(freq, rootx, rooty, dist){
 
     let trx = x + radius / 2;
     let tryy = y - (Math.sqrt(3) * radius) / 2;
+
     return new NodeHex(
         new Note(freq, x, y),
         new Note(freq * FIFTH_DOWN, lx, ly),
@@ -77,6 +102,7 @@ function createHexes(freq, x, y, dist, amount, hexes){
     let hex = createHex(freq, x, y, dist);
     console.log(hex);
     hexes.push(hex);
+    console.log(hexes);
       // center note
     for(const key in hex){
         //if(key == "root"){continue;}
